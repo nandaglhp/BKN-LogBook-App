@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Visitor;
+use App\Models\Visit;
 use Illuminate\Http\Request;
 
 class VisitorSessionController extends Controller
@@ -16,6 +17,10 @@ class VisitorSessionController extends Controller
                 'message' => 'Visitor not found'
             ], 404);
         }
-    
+
+        // Check Active Visit
+        $activeVisit = Visit::where('visitor_id', $visitor->id)
+            ->where('status', 'active')
+            ->first();
     }
 }

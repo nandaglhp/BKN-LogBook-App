@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Visitor;
 use Illuminate\Http\Request;
 
 class VisitorSessionController extends Controller
 {
     public function handle(Request $request){
-        return response()->json([
+        // Lookup Visitor
+        $visitor = Visitor::where('nik', $request->nik)->first();
 
-
-            'status' => 'Visitor session handled successfully'
-        ]);
+        if (!$visitor) {
+            return response()->json([
+                'message' => 'Visitor not found'
+            ], 404);
+        }
+    
     }
 }

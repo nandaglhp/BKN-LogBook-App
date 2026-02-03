@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('visitors', function (Blueprint $table) {
             $table->id();
-            $table->string('nik');
+            $table->string('nik')->unique();
             $table->string('name');
-            $table->string('phone');
-            $table->string('pfp_path');
-            $table->string('ktp_path');
+            $table->string('phone')->nullable();
+            $table->string('pfp_path')->nullable();
+            $table->string('ktp_path')->nullable();
             $table->timestamps();
         });
     }

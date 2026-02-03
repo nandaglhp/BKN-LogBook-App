@@ -17,9 +17,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('visitor_id')->constrained('visitors');
             $table->foreignId('room_id')->constrained('rooms');
-            $table->string('task_letter_path');
-            $table->timestamp('check_in_time')->nullable();
-            $table->timestamp('check_out_time')->nullable();
+            $table->string('task_letter_path')->nullable();
+            $table->timestamp('check_in_at')->nullable();
+            $table->timestamp('check_out_at')->nullable();
             $table->string('status');
             $table->timestamps();
         });

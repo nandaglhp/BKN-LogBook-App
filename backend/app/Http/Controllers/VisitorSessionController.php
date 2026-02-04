@@ -39,5 +39,15 @@ class VisitorSessionController extends Controller
                 'visit' => $visit->id,
             ], 200);
         }
+
+        // check-out logic
+        $activeVisit->check_out_at = Carbon::now();
+        $activeVisit->status = 'checked_out';
+        $activeVisit->save();
+        return response()->json([
+            'mode' => 'checked_out',
+            'message' => 'Check-out successful',
+            'visit' => $activeVisit->id,
+        ], 200);
     }
 }

@@ -33,10 +33,17 @@ class VisitorSessionController extends Controller
                 'check_out_at' => null,
                 'status' => 'active'
             ]);
-            return response()->json([
+
+            // history
+            $history = Visit::where('visitor_id', $visitor->id)
+                ->orderBy('check_in_at')
+                ->get(['id', 'check_in_at', 'check_out_at']);
+
+                return response()->json([
                 'mode' => 'checked_in',
                 'message' => 'Check-in successful',
-                'visit' => $visit->id,
+                'visit_id' => $visit->id,
+                'history' => $history
             ], 200);
         }
 
@@ -44,10 +51,16 @@ class VisitorSessionController extends Controller
         $activeVisit->check_out_at = Carbon::now();
         $activeVisit->status = 'checked_out';
         $activeVisit->save();
+
+         $history = Visit::where('visitor_id', $visitor->id)
+            ->orderByDesc('check_in_at')
+            ->get(['id', 'check_in_at', 'check_out_at']);
+
         return response()->json([
             'mode' => 'checked_out',
             'message' => 'Check-out successful',
-            'visit' => $activeVisit->id,
+            'visit_id' => $activeVisit->id,
+            'history' => $history
         ], 200);
     }
 }

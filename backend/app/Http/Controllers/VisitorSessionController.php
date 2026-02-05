@@ -10,7 +10,12 @@ use Carbon\Carbon;
 class VisitorSessionController extends Controller
 {
     public function handle(Request $request){
-        // Lookup Visitor
+    // validation
+        $request->validate([
+            'nik' => 'required|string',
+            'room_id' => 'required|integer|exists:rooms,id'
+        ]);
+    // Lookup Visitor
         $visitor = Visitor::where('nik', $request->nik)->first();
 
         if (!$visitor) {

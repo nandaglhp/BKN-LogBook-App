@@ -6,16 +6,18 @@ use App\Models\Visitor;
 use App\Models\Visit;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class VisitorSessionController extends Controller
 {
     public function handle(Request $request){
-    // validation
+        // validation
         $request->validate([
             'nik' => 'required|string',
             'room_id' => 'required|integer|exists:rooms,id'
         ]);
-    // Lookup Visitor
+
+         // Lookup Visitor
         $visitor = Visitor::where('nik', $request->nik)->first();
 
         if (!$visitor) {
@@ -24,48 +26,56 @@ class VisitorSessionController extends Controller
             ], 404);
         }
 
-        // Active Visit
-        $activeVisit = Visit::where('visitor_id', $visitor->id)
-            ->where('status', 'active')
-            ->first();
+        return DB::transaction(function () use ($request, $visitor) {
+            // Lock visit rows for this visitor
+            $activeVisit = Visit::where('visitor_id', $visitor->id)
+                ->where('status', 'active')
+                ->lockForUpdate()
+                ->first();
 
-        // check-in logic
-        if (!$activeVisit) {
-            $visit = Visit::create([
-                'visitor_id' => $visitor->id,
-                'room_id' => $request->room_id,
-                'check_in_at' => Carbon::now(),
-                'check_out_at' => null,
-                'status' => 'active'
-            ]);
+            // Active Visit
+            $activeVisit = Visit::where('visitor_id', $visitor->id)
+                ->where('status', 'active')
+                ->first();
 
-            // history
+            // check-in logic
+            if (!$activeVisit) {
+                $visit = Visit::create([
+                    'visitor_id' => $visitor->id,
+                    'room_id' => $request->room_id,
+                    'check_in_at' => Carbon::now(),
+                    'check_out_at' => null,
+                    'status' => 'active'
+                ]);
+
+                // history
+                $history = Visit::where('visitor_id', $visitor->id)
+                    ->orderBy('check_in_at')
+                    ->get(['id', 'check_in_at', 'check_out_at']);
+
+                    return response()->json([
+                    'mode' => 'checked_in',
+                    'message' => 'Check-in successful',
+                    'visit_id' => $visit->id,
+                    'history' => $history
+                ], 200);
+            }
+
+            // check-out logic
+            $activeVisit->check_out_at = Carbon::now();
+            $activeVisit->status = 'checked_out';
+            $activeVisit->save();
+
             $history = Visit::where('visitor_id', $visitor->id)
-                ->orderBy('check_in_at')
+                ->orderByDesc('check_in_at')
                 ->get(['id', 'check_in_at', 'check_out_at']);
 
-                return response()->json([
-                'mode' => 'checked_in',
-                'message' => 'Check-in successful',
-                'visit_id' => $visit->id,
+            return response()->json([
+                'mode' => 'checked_out',
+                'message' => 'Check-out successful',
+                'visit_id' => $activeVisit->id,
                 'history' => $history
             ], 200);
         }
-
-        // check-out logic
-        $activeVisit->check_out_at = Carbon::now();
-        $activeVisit->status = 'checked_out';
-        $activeVisit->save();
-
-         $history = Visit::where('visitor_id', $visitor->id)
-            ->orderByDesc('check_in_at')
-            ->get(['id', 'check_in_at', 'check_out_at']);
-
-        return response()->json([
-            'mode' => 'checked_out',
-            'message' => 'Check-out successful',
-            'visit_id' => $activeVisit->id,
-            'history' => $history
-        ], 200);
-    }
+    );}
 }
